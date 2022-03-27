@@ -1,3 +1,3 @@
 test('hello', () => {
-	console.log('hi')
-})
+	console.log('hi');
+});
