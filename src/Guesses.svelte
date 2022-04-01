@@ -1,12 +1,13 @@
 <script type="ts">
 	import { fade } from 'svelte/transition';
-	import { makeCalculateColor } from './guesses.ts';
+	import { calculateColor } from './guesses';
 	export let guesses: Array<Array<string>>;
 	export let secretWordLetters: Array<string>;
 	export let curI: number;
 	$: revealed = [0, 0, 0, 0, 0, 0];
-	$: calculateColor = makeCalculateColor(guesses, secretWordLetters);
-	$: colors = guesses.map((guess, i) => guess.map((_, j) => calculateColor(i, j)));
+	$: colors = guesses.map((guess, i) =>
+		guess.map((_, j) => calculateColor(guesses, secretWordLetters, i, j))
+	);
 </script>
 
 <div class="container">

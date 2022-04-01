@@ -2,7 +2,8 @@
 	import Keyboard from './Keyboard.svelte';
 	import Guesses from './Guesses.svelte';
 	import wordList from './words';
-	const secretWord = 'tasty';
+	export let secretWord: string;
+
 	const secretWordLetters = secretWord.split('');
 	const emptyGuess = () => ['', '', '', '', ''];
 	$: curI = 0;
