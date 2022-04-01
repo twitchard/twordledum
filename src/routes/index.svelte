@@ -15,8 +15,11 @@
 	  })
 		const isAuthenticated = await auth0.isAuthenticated();
 		if (!isAuthenticated) {
-			console.log(isAuthenticated)
-			console.log(auth0)
+			const query = window.location.search;
+			if (query.includes("code=") && query.includes("state=")) {
+				await auth0.handleRedirectCallback();
+				window.history.replaceState({}, document.title, "/");
+			}
 		}
 		return {auth0, isAuthenticated}
 	}
