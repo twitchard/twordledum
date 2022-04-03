@@ -1,82 +1,56 @@
 <script type="ts">
 	import Keyboard from './Keyboard.svelte';
 	import Guesses from './Guesses.svelte';
-	import wordList from './words';
-	export let secretWord: string;
+	import * as G from './game';
+	import type { Game } from './game';
 
-	const secretWordLetters = secretWord.split('');
-	const emptyGuess = () => ['', '', '', '', ''];
-	$: curI = 0;
-	$: curJ = 0;
-
-	let colors: { [color: string]: 'yellow' | 'dark' | 'green' } = {};
-
-	type Color = 'green' | 'yellow' | 'dark';
-	const upgrade = (letter: string, newColor: Color): void => {
-		const old = colors[letter];
-		const value = ['green' as const, 'yellow' as const, 'dark' as const].filter((x) =>
-			[newColor, old].includes(x)
-		)[0];
-		colors = { ...colors, [letter]: value };
-	};
-
-	const evaluateGuess = (guess: Array<string>) => {
-		for (const i in guess) {
-			const letter = guess[i];
-			if (secretWordLetters[i] === guess[i]) {
-				upgrade(letter, 'green');
-			} else if (secretWordLetters.includes(letter)) {
-				upgrade(letter, 'yellow');
-			} else {
-				upgrade(letter, 'dark');
-			}
-		}
-	};
-
-	const handleGuess = () => {
-		if (curI >= 6) {
-			console.log('Out of guesses');
-		}
-		if (wordList.has(guesses[curI].join(''))) {
-			console.log('I know that word');
-			evaluateGuess(guesses[curI]);
-			curI++;
-			curJ = 0;
-		} else {
-			console.log('Not a word, try again.');
-		}
-	};
+	export let gameId: string;
+	let game: Game = G.initialGame();
+	let errorMessage: string | null = null;
+	$: colors = G.calculateKeyboardColors(game.guesses);
 
 	const clickLetter = (x: string) => {
-		if (curJ < 5) {
-			guesses[curI][curJ] = x;
-			curJ++;
-		}
+		if (game.t !== 'active') return;
+		game = G.addLetter(game, x);
 	};
 
 	const clickBackspace = () => {
-		if (curJ > 0) {
-			guesses[curI][curJ - 1] = '';
-			curJ--;
-		}
+		if (game.t !== 'active') return;
+		game = G.removeLetter(game);
 	};
 
-	const clickEnter = () => {
-		if ((curJ = 4)) {
-			return handleGuess();
+	const clickEnter = async () => {
+		if (game.t !== 'active') return;
+		const response = await fetch('/guess', {
+			method: 'POST',
+			body: JSON.stringify({
+				gameId,
+				guess: game.activeGuess
+			})
+		});
+		if (response.status >= 400) {
+			errorMessage = await response.text();
 		}
+		const result: G.EvaluatedGuess = await response.json();
+		game = G.getAnswer(game, result);
 	};
-
-	$: guesses = new Array(6).fill(null).map((_) => emptyGuess());
 </script>
 
 <div class="app">
-	<Guesses {guesses} {curI} {secretWordLetters} />
+  {#if errorMessage}
+<div class:errorMessage={true}>{errorMessage}</div>
+  {/if}
+	<Guesses {game} />
 	<Keyboard {clickLetter} {clickBackspace} {clickEnter} {colors} />
 </div>
 
 <style>
 	.app {
 		width: 500px;
+		margin-left: auto;
+		margin-right: auto;
 	}
+	.errorMessage {
+    background: lightred;
+  }
 </style>
